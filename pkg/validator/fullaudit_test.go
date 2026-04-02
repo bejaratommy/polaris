@@ -78,3 +78,32 @@ func TestGetTemplateData(t *testing.T) {
 		assert.Equal(t, found, true)
 	}
 }
+
+func TestCronJobAuditWithoutRunningPods(t *testing.T) {
+	c := conf.Configuration{
+		Checks: map[string]conf.Severity{
+			"readinessProbeMissing": conf.SeverityDanger,
+			"livenessProbeMissing":  conf.SeverityWarning,
+		},
+	}
+
+	ns := test.MockNamespace("test")
+	cronjob, _ := test.MockCronJob("test", "mycronjob")
+	// Intentionally no pod - simulates a CronJob with no currently running jobs
+	k8s, dynamicClient := test.SetupTestAPI(&ns, &cronjob)
+	resources, err := kube.CreateResourceProviderFromAPI(context.Background(), k8s, "test", dynamicClient, c)
+	assert.NoError(t, err)
+
+	auditData, err := RunAudit(context.Background(), c, resources)
+	assert.NoError(t, err)
+
+	// CronJob should appear in results even when no pods are running
+	found := false
+	for _, result := range auditData.Results {
+		if result.Kind == "CronJob" && result.Name == "mycronjob" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "CronJob should appear in audit results even when no pods are running")
+}

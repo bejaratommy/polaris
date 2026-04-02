@@ -175,3 +175,24 @@ func TestGetResourceFromAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCronJobFromAPIWithoutPods(t *testing.T) {
+	ns := test.MockNamespace("test")
+	cronjob, _ := test.MockCronJob("test", "cronjob")
+	// Note: we intentionally do NOT include the pod - simulating a CronJob with no running pods
+	k8s, dynamicInterface := test.SetupTestAPI(&ns, &cronjob)
+
+	resources, err := CreateResourceProviderFromAPI(context.Background(), k8s, "test", dynamicInterface, conf.Configuration{})
+	assert.NoError(t, err)
+
+	found := false
+	for k, v := range resources.Resources {
+		for _, ctrl := range v {
+			if ctrl.Kind == "CronJob" && ctrl.ObjectMeta.GetName() == "cronjob" {
+				found = true
+				assert.NotNil(t, ctrl.PodSpec, "CronJob PodSpec should not be nil even without running pods (resource key: %s)", k)
+			}
+		}
+	}
+	assert.True(t, found, "CronJob should be detected even when no pods are running")
+}
