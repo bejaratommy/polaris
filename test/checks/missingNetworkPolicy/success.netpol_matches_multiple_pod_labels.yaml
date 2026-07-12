@@ -1,0 +1,46 @@
+# This succeeds because the NetworkPolicy targets the pod using more than one
+# of its labels. Selecting on multiple labels is the common case (e.g. Helm
+# charts that set several app.kubernetes.io/* labels) and must not be penalized.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  labels:
+    app.kubernetes.io/component: cainjector
+    app.kubernetes.io/instance: cert-manager
+    app.kubernetes.io/name: cert-manager
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: cainjector
+      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/name: cert-manager
+  policyTypes:
+  - Egress
+  - Ingress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: cert-manager
+    ports:
+    - protocol: TCP
+      port: 80
