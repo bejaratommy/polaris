@@ -233,6 +233,14 @@ func GetRouter(ctx context.Context, c config.Configuration, auditPath string, po
 
 // MainHandler gets template data and renders the dashboard with it.
 func MainHandler(w http.ResponseWriter, r *http.Request, c config.Configuration, auditData validator.AuditData, basePath string) {
+	results := []validator.Result{}
+	for _, result := range auditData.Results {
+		if result.GetSummary() != (validator.CountSummary{}) {
+			results = append(results, result)
+		}
+	}
+	auditData.Results = results
+
 	jsonData, err := json.Marshal(auditData.GetSummary())
 
 	if err != nil {
