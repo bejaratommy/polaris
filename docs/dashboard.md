@@ -48,6 +48,11 @@ docker run -d -p8080:8080 -v ~/.kube/config:/opt/app/config:ro  us-docker.pkg.de
 ##  Using the Dashboard
 The Polaris dashboard is a way to get a simple visual overview of the current state of your Kubernetes workloads as well as a roadmap for what can be improved. The dashboard provides a cluster wide overview as well as breaking out results by category, namespace, and workload.
 
+Resources with no applied checks are hidden from the dashboard. Namespaces with no
+checked resources are also omitted from the resource list, navigation, and namespace
+filter. Checks on an object's spec, pod spec, or containers keep the resource visible.
+Cluster totals and the full audit data returned by `/results.json` are unchanged.
+
 <p align="center">
   <img src="/img/dashboard-screenshot.png" alt="Polaris Dashboard" width="550"/>
 </p>
